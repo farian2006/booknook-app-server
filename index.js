@@ -1,5 +1,5 @@
 import express from "express";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import cors from "cors";
 import "dotenv/config";
 
@@ -26,16 +26,21 @@ const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("booknook-app");
 const addBookCollection = db.collection("books");
 
-
 app.post("/add-book", async (req, res) => {
-    const data = req.body;
-    const result = await addBookCollection.insertOne(data);
-    res.send(result);
+  const data = req.body;
+  const result = await addBookCollection.insertOne(data);
+  res.send(result);
 });
 
-app.get("/books",async (req, res) => {
-    const result = await addBookCollection.find({}).toArray();
-    res.send(result);
+app.get("/books", async (req, res) => {
+  const result = await addBookCollection.find({}).toArray();
+  res.send(result);
+});
+
+app.get("/books/:id", async (req, res) => {
+  const { id } = req.params;
+  const result = await addBookCollection.findOne({ _id: new ObjectId(id) });
+  res.send(result);
 });
 
 app.listen(PORT, () => {

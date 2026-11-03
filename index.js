@@ -43,6 +43,11 @@ app.get("/books/:id", async (req, res) => {
   res.send(result);
 });
 
+app.get("/featured-books", async (req, res) => {
+  const result = await addBookCollection.find().limit(6).toArray();
+  res.send(result);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -48,6 +48,53 @@ app.get("/featured-books", async (req, res) => {
   res.send(result);
 });
 
+app.get("/my-books", async (req, res) => {
+  const { userEmail } = req.query;
+  if (!userEmail) {
+    return res.status(400).send({ message: "userEmail is required" });
+  }
+  const result = await addBookCollection.find({ email: userEmail }).toArray();
+  res.send(result);
+});
+
+app.patch("/books/:id", async (req, res) => {
+  const { id } = req.params;
+  const { userEmail } = req.query;
+  const { _id, email, ...updates } = req.body;
+
+  const ownerEmail = userEmail ?? email;
+
+  const result = await addBookCollection.updateOne(
+    { _id: new ObjectId(id), email: ownerEmail },
+    { $set: updates },
+  );
+  if (result.matchedCount === 0) {
+    return res.status(403).send({ message: "Book Not Found" });
+  }
+  res.send(result);
+});
+
+app.delete("/books/:id", async (req, res) => {
+  const { id } = req.params;
+  const { email } = req.query;
+
+  const result = await addBookCollection.deleteOne({
+    _id: new ObjectId(id),
+    email: email,
+  });
+
+  if (result.deletedCount === 0) {
+    return res.status(403).send({ message: "Not allowed or book not found" });
+  }
+  res.send(result);
+});
+
+app.get("/add-books/:email",async(req,res)=>{
+  const {email} =req.params;
+  const result = await addBookCollection.find({email:email}).toArray();
+  res.send(result);
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

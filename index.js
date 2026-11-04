@@ -25,6 +25,7 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("booknook-app");
 const addBookCollection = db.collection("books");
+const borrowCollection = db.collection("borrows");
 
 app.post("/add-book", async (req, res) => {
   const data = req.body;
@@ -89,11 +90,53 @@ app.delete("/books/:id", async (req, res) => {
   res.send(result);
 });
 
-app.get("/add-books/:email",async(req,res)=>{
-  const {email} =req.params;
-  const result = await addBookCollection.find({email:email}).toArray();
+app.get("/add-books/:email", async (req, res) => {
+  const { email } = req.params;
+  const result = await addBookCollection.find({ email: email }).toArray();
   res.send(result);
-})
+});
+
+app.post("/my-borrows", async (req, res) => {
+  const data = req.body;
+  const result = await borrowCollection.insertOne(data);
+  res.send(result);
+});
+
+app.get("/my-borrows", async (req, res) => {
+  const { userEmail } = req.query;
+  if (!userEmail) {
+    return res.status(400).send({ message: "userEmail is required" });
+  }
+  const result = await borrowCollection.find({ userEmail }).toArray();
+  res.send(result);
+});
+
+app.get("/my-borrows/:email", async (req, res) => {
+  const { email } = req.params;
+  const result = await borrowCollection.find({ userEmail: email }).toArray();
+  res.send(result);
+});
+
+app.patch("/my-borrows/:id", async (req, res) => {
+  const { id } = req.params;
+  const { userEmail } = req.query;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ message: "Invalid borrow id" });
+  }
+
+  const result = await borrowCollection.updateOne(
+    { _id: new ObjectId(id), userEmail, returnDate: { $exists: false } },
+    { $set: { returnDate: new Date().toISOString() } },
+  );
+
+  if (result.matchedCount === 0) {
+    return res
+      .status(404)
+      .send({ message: "Borrow record not found or already returned" });
+  }
+  res.send(result);
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

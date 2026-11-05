@@ -1,15 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
-/**
- * Shared JWT verification (better-auth JWT plugin tokens).
- * Any route that needs protection uses the `verifyToken` middleware;
- * handlers that want the payload directly can call `verifyJwt` themselves.
- *
- * Auth app (booknook-app-client) signs tokens with:
- *   iss = BETTER_AUTH_URL origin,  aud = JWT_AUDIENCE (falls back to origin)
- * Keep these env values in sync with the client .env, and don't hardcode
- * them — derived values survive trailing slashes/whitespace.
- */
 function authOrigin() {
   const url = process.env.BETTER_AUTH_URL;
   if (!url) {
@@ -19,8 +9,6 @@ function authOrigin() {
   }
   return new URL(url).origin;
 }
-
-// Remote JWKS singleton; built on first use so .env is loaded by then.
 let JWKS;
 function getJwks() {
   if (!JWKS) {
@@ -28,11 +16,6 @@ function getJwks() {
   }
   return JWKS;
 }
-
-/**
- * Verify a raw JWT string and return its payload.
- * Throws jose error codes you can branch on (e.g. "ERR_JWT_EXPIRED").
- */
 export async function verifyJwt(token) {
   const issuer = authOrigin();
   const { payload } = await jwtVerify(token, getJwks(), {
@@ -43,10 +26,6 @@ export async function verifyJwt(token) {
   return payload;
 }
 
-/**
- * Express middleware: 401s on a missing/invalid Bearer token,
- * or attaches the verified payload to `req.user` and calls next().
- */
 export async function verifyToken(req, res, next) {
   try {
     const authHeader = req.headers.authorization;

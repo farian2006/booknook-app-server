@@ -8,7 +8,17 @@ const app = express();
 
 const PORT = 5000;
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "https://booknook-app-rho.vercel.app",
+    "http://localhost:3000",
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const client = new MongoClient(process.env.MONGODB_URL);
@@ -142,3 +152,5 @@ app.patch("/my-borrows/:id", verifyToken,async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+export default app;

@@ -2,7 +2,7 @@ import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
 import cors from "cors";
 import "dotenv/config";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { verifyToken } from "./middleware/verifyToken.js";
 
 const app = express();
 
@@ -28,38 +28,7 @@ const db = mongoClient.db("booknook-app");
 const addBookCollection = db.collection("books");
 const borrowCollection = db.collection("borrows");
 
-const JWKS = createRemoteJWKSet(new URL(`http://localhost:3000/api/auth/jwks`));
-
-const verifyToken = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).send({
-        message: "Unauthorized: Token is missing",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: process.env.BETTER_AUTH_URL,
-      audience: process.env.JWT_AUDIENCE,
-    });
-
-    req.user = payload;
-
-    next();
-  } catch (error) {
-    console.error("JWT Error:", error.message);
-
-    return res.status(401).send({
-      message: "Invalid or expired token",
-    });
-  }
-};
-
-app.post("/add-book", async (req, res) => {
+app.post("/add-book", verifyToken, async (req, res) => {
   const data = req.body;
   const result = await addBookCollection.insertOne(data);
   res.send(result);
@@ -81,7 +50,7 @@ app.get("/featured-books", async (req, res) => {
   res.send(result);
 });
 
-app.get("/my-books", async (req, res) => {
+app.get("/my-books", verifyToken ,async (req, res) => {
   const { userEmail } = req.query;
   if (!userEmail) {
     return res.status(400).send({ message: "userEmail is required" });
@@ -90,7 +59,7 @@ app.get("/my-books", async (req, res) => {
   res.send(result);
 });
 
-app.patch("/books/:id", async (req, res) => {
+app.patch("/books/:id", verifyToken,async (req, res) => {
   const { id } = req.params;
   const { userEmail } = req.query;
   const { _id, email, ...updates } = req.body;
@@ -107,7 +76,7 @@ app.patch("/books/:id", async (req, res) => {
   res.send(result);
 });
 
-app.delete("/books/:id", async (req, res) => {
+app.delete("/books/:id", verifyToken,async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
 
@@ -122,19 +91,19 @@ app.delete("/books/:id", async (req, res) => {
   res.send(result);
 });
 
-app.get("/add-books/:email", async (req, res) => {
+app.get("/add-books/:email", verifyToken,async (req, res) => {
   const { email } = req.params;
   const result = await addBookCollection.find({ email: email }).toArray();
   res.send(result);
 });
 
-app.post("/my-borrows", async (req, res) => {
+app.post("/my-borrows", verifyToken,async (req, res) => {
   const data = req.body;
   const result = await borrowCollection.insertOne(data);
   res.send(result);
 });
 
-app.get("/my-borrows", async (req, res) => {
+app.get("/my-borrows", verifyToken,async (req, res) => {
   const { userEmail } = req.query;
   if (!userEmail) {
     return res.status(400).send({ message: "userEmail is required" });
@@ -143,13 +112,13 @@ app.get("/my-borrows", async (req, res) => {
   res.send(result);
 });
 
-app.get("/my-borrows/:email", async (req, res) => {
+app.get("/my-borrows/:email", verifyToken,async (req, res) => {
   const { email } = req.params;
   const result = await borrowCollection.find({ userEmail: email }).toArray();
   res.send(result);
 });
 
-app.patch("/my-borrows/:id", async (req, res) => {
+app.patch("/my-borrows/:id", verifyToken,async (req, res) => {
   const { id } = req.params;
   const { userEmail } = req.query;
 
